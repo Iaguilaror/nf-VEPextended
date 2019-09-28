@@ -1,0 +1,25 @@
+### mk-filter-vcf ###
+# mkfile script with dependency rules for:
+#	1. Filtering positions without allele count.
+#	2. Compressing the output using 1 thread.
+#	3. Indexing the VCF file compressed and creating an index file.
+#
+## For more information about 'mk' dependency control, see https://9fans.github.io/plan9port/man/man1/mk.html
+
+## Define shell command line which will be used to run scripts.
+MKSHELL=/bin/bash
+
+## Use bcftools to manipulate variants in the Variant Call Format (VCF).
+## To filter the VCF, the --min-ac option, prints sites where minimum allele count (INFO/AC) is one.
+## For more information about 'bcftools' commands, see https://samtools.github.io/bcftools/bcftools.html
+%.filtered.vcf.gz:Q: %.vcf.gz
+	echo "[DEBUG] filtering vcf file"
+	bcftools view \
+		--compression-level 0 \
+		--output-type z \
+		--min-ac 1 \
+		--threads 1 \
+		$prereq > $target.build \
+	&& tabix -p vcf $target.build \
+	&& mv $target.build $target \
+	&& mv $target.build.tbi $target.tbi

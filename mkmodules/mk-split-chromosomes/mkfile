@@ -1,0 +1,60 @@
+### mk-split-chromosomes ###
+# mkfile script with dependency rules for:
+#	1. Extract variants of VCF file (body).
+#	2. Extract header of VCF file.
+# 3. Split vcf variants in chunks.
+# 4. Add the header to each chunk with variants.
+## For more information about 'mk' dependency control, see https://9fans.github.io/plan9port/man/man1/mk.html
+
+## Define shell command line which will be used to run scripts.
+MKSHELL=/bin/bash
+
+%.CHECKPOINT.tmp:V: %.SPLIT_BODY.tmp %.header.vcf.tmp
+	## Paste header to each vcf split body file
+	echo "[DEBUG] reheading chunks"
+	# Cat concatenate header.tmp and chunkfile(SPLIT_BODY.tmp)
+	for chunkfile in $stem.chunk*.tmp
+	do
+		ofile="$(echo $chunkfile | sed 's#.tmp#.vcf#')"
+		echo "[...] reheading $ofile"
+		cat $stem.header.vcf.tmp $chunkfile > $ofile.build \
+		&& mv $ofile.build $ofile
+	done \
+	&& rm $stem.*.tmp
+
+%.SPLIT_BODY.tmp:VQ:	%.body.vcf.tmp
+	## create 10 tmp outpus with the split body
+	echo "[DEBUG] split VCF body"
+	## Results will be appended to the tmp output with the split vcf.
+	## Use split to make chunks of the body.vcf.tmp
+	# 1. --suffix-length gives a number of chunk to the name file with three digits.
+	# 2. --additional-suffix gives the extension ".tmp" to the name file.
+	# 3. -d to uses numeric suffixes starting at 0
+	# 4. --number l/10 makes 10 chunk files
+	FILE_EXTENSION="tmp"
+	split \
+		--suffix-length=3 \
+		--additional-suffix=".$FILE_EXTENSION" \
+		-d \
+	--number l/10 \
+	$prereq \
+	$stem".chunk" \
+	&& rm $prereq
+
+%.body.vcf.tmp:Q:	%.vcf
+	## create tmp output with body
+	echo "[DEBUG] extract body vcf"
+	## Results will be appended to the tmp output with header
+	## Use bcftools to extract header in vcf format (view "-H" option)
+	## For more information about 'bcftools' commands, see https://samtools.github.io/bcftools/bcftools.html
+	bcftools view -H $prereq > $target.build \
+	&& mv $target.build $target
+
+%.header.vcf.tmp:Q: %.vcf
+	## create tmp output with header
+	echo "[DEBUG] extract header vcf"
+	## Results will be appended to the tmp output with header
+	## Use bcftools to extract header in vcf format (view "-h" option)
+	## For more information about 'bcftools' commands, see https://samtools.github.io/bcftools/bcftools.html
+	bcftools view -h $prereq > $target.build \
+	&& mv $target.build $target

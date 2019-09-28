@@ -1,0 +1,24 @@
+### mk-rejoin-chromosomes ###
+# mkfile script with dependency rules for:
+#	1. Extract variants of VCF file (body).
+#	2. Extract header of VCF file.
+# 3. Split vcf variants in chunks.
+# 4. Add the header to each chunk with variants.
+## For more information about 'mk' dependency control, see https://9fans.github.io/plan9port/man/man1/mk.html
+
+## Define shell command line which will be used to run scripts.
+MKSHELL=/bin/bash
+
+%.untangled_multiallelics.anno_dbSNP_vep.vcf.gz:Q:
+	## Rejoin split annotated chromosomes
+	echo "[DEBUG] rejoining $target"
+	## Use bcftools to concat all annotated chunks (concat)
+	## For more information about 'bcftools' commands, see https://samtools.github.io/bcftools/bcftools.html
+	## Ouput will be compressed
+	## Make an index using tabix
+	bcftools concat \
+		$(ls $stem.subsampled* | sort -V) \
+		--output-type z > $target.build \
+	&& tabix -p vcf $target.build \
+	&& mv $target.build $target \
+	&& mv $target.build.tbi $target.tbi

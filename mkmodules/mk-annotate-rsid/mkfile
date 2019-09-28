@@ -1,0 +1,63 @@
+## mk-annotate-rsid ###
+# mkfile script with dependency rules for:
+#	1. Sort an uncompressed vcf file.
+# 2. Create a reference with a defined range.
+# 3. Annotate ID using a reference to the original vcf.
+## For more information about 'mk' dependency control, see https://9fans.github.io/plan9port/man/man1/mk.html
+
+## Define shell command line which will be used to run scripts.
+MKSHELL=/bin/bash
+
+%.anno_dbSNP.vcf:Q: %.vcf.gz.tmp %.anno_dbSNP.subsampled_reference.vcf.gz.tmp
+	echo "[DEBUG] annotate dbsnp for $prereq"
+	# Add ID by using bcftools annotate, specifing the reference that will be added to ID column.
+	bcftools annotate \
+		--annotations $stem.anno_dbSNP.subsampled_reference.vcf.gz.tmp \
+		--columns ID \
+		$stem.vcf.gz.tmp > $target.build \
+	&& mv $target.build $target
+	## delete tmp files
+	rm $stem.*.tmp*
+
+%.vcf.gz.tmp:Q: %.vcf
+	echo "[DEBUG] compress vcf for $prereq"
+	# Use bgzip stdout to write to standard output, keeping original file unchanged.
+	# Use tabix to make an index of vcf file.
+	bgzip \
+		--stdout \
+		--force \
+		$prereq \
+	> $target.build \
+	&& tabix -p vcf $target.build \
+	&& mv $target.build $target \
+	&& mv $target.build.tbi $target.tbi
+
+%.anno_dbSNP.subsampled_reference.vcf.gz.tmp:: $REFERENCE_DBSNP %.vcf.coordinate_columns.tmp
+	echo "[DEBUG] subsample the dbSNP reference"
+	## get the chromosome of the chunk
+	# cut the first column that belongs to chromosome, sort it and keep only unique lines (unique chromosome).
+	chromosome=$(cut -f1 $stem.vcf.coordinate_columns.tmp | sort -u)
+	## get the minor coordinate
+	# cut the second column that belongs to position, and keep only the first line.
+	min_coordinate=$(cut -f2 $stem.vcf.coordinate_columns.tmp | head -n1)
+	## get the mayor coordinate
+	# cut the second column that belongs to position, and keep only the last line.
+	max_coordinate=$(cut -f2 $stem.vcf.coordinate_columns.tmp | tail -n1)
+	## define range
+	# Range of vcf body will be from the first position to the last one.
+	vcf_range="$chromosome:$min_coordinate-$max_coordinate"
+	## print DEBUG
+	echo "[DEBUG] input vcf ranges from $vcf_range"
+	# use bcftools to create an intermediate REFERENCE with a limited range
+	# For more information about 'bcftools' commands, see https://samtools.github.io/bcftools/bcftools.html
+	# Make an index with tabix
+	bcftools view --output-type z $REFERENCE_DBSNP $vcf_range > $target.build \
+	&& tabix -p vcf $target.build \
+	&& mv $target.build $target \
+	&& mv $target.build.tbi $target.tbi
+
+%.vcf.coordinate_columns.tmp:Q: %.vcf
+	## View the body of the vcf, cut the first and second column and sort it considering numbers (sort -V)
+	echo "[DEBUG] getting coordinate columns from $prereq"
+	bcftools view -H $prereq | cut -f1-2 | sort -V > $target.build \
+	&& mv $target.build $target

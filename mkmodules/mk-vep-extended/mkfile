@@ -1,0 +1,84 @@
+## mk-vep-extended ###
+# mkfile script with dependency rules for:
+#	1. Run Variant Effector Predictor to annotate variants in a vcf.
+## For more information about VEP, see https://www.ensembl.org/info/docs/tools/vep/index.html
+
+## Define shell command line which will be used to run scripts.
+MKSHELL=/bin/bash
+%.anno_dbSNP_vep.vcf:Q: %.anno_dbSNP.vcf
+	echo "[DEBUG] annotating $prereq"
+	## HGVS may take a lot of computing time the first time is run
+	# --format, input type that can be Ensembl, VCF, IDs, HGVS, SPDI or region format
+	# --vcf, selects the output format
+	# --vcf_info_field, changes the name of the INFO key where VEP write the consequences in its VCF output
+	# --force_overwrite, forces to overwrite output even if its an error
+	# --fork, enables forking
+	# --buffer_size, number of variants that are read in to memory simultaneously
+	# --regulatory, sees overlaps in regulatory regions
+	# --pick, takes one line of consequence per variant
+	# --sift p, writes sift prediction term
+	# --polyphen p, writes polyphen prediction term
+	# --gene_phenotype, indicates if a certain genotype is associated with a phenotype
+	# --total_length, gives cDNA, CDS and protein positions
+	# --numbers, indicates affected exon or intron
+	# --hgvs, adds HGVS nomenclature based on Ensembl identifiers
+	# --hgvsg, adds genomic HGVS nomenclature
+	# --tsl, adds transcript support level
+	# --appris, annotates APPRIS isoform annotation for this transcript
+	# --check_existing, checks for the existence of known variants in the same locus
+	vep \
+		--input_file $prereq \
+		--format "vcf" \
+		--output_file $target.build \
+		--vcf \
+		--vcf_info_field ANN \
+		--force_overwrite \
+		--stats_file $target.stats.html \
+		--warning_file $target.err.txt \
+		--fork 1 \
+		--species "homo_sapiens" \
+		--assembly $VEP_GENOME_VERSION \
+		--cache \
+		--offline \
+		--fasta $GENOME_REFERENCE \
+		--buffer_size 10000 \
+		--regulatory \
+		--pick \
+		--variant_class \
+		--sift p \
+		--polyphen p \
+		--gene_phenotype \
+		--total_length \
+		--numbers \
+		--domains \
+		--hgvs \
+		--hgvsg \
+		--transcript_version \
+		--protein \
+		--symbol \
+		--ccds \
+		--uniprot \
+		--tsl \
+		--appris \
+		--canonical \
+		--biotype \
+		--check_existing \
+		--af \
+		--max_af \
+		--af_1kg \
+		--af_esp \
+		--af_gnomad \
+		--pubmed \
+		--check_ref \
+		--dont_skip \
+		--allow_non_variant \
+		-custom "$GENEHANCER_REFERENCE","GeneHancer_type_and_Genes","bed","overlap","0" \
+		-custom "$GNOMAD_REFERENCE","gnomADg","vcf","exact",0,$(grep -v "^#" gnomAD-variants_fields_to_annotate.txt | tr "\n" "," | sed "s#,\$##") \
+		-custom "$GNOMAD_COVERAGE_REFERENCE","gnomADg_cov","bed","overlap","0" \
+		-custom "$GWASCATALOG_REFERENCE","gwascatalog","vcf","exact",0,"GWAScat_DISEASE_or_TRAIT,GWAScat_INITIAL_SAMPLE_SIZE,GWAScat_REPLICATION_SAMPLE_SIZE,GWAScat_STRONGEST_SNP_and_RISK_ALLELE,GWAScat_PVALUE,GWAScat_STUDY_ACCESSION" \
+		-custom "$CLINVAR_REFERENCE","clinvar","vcf","exact",0,"CLNDN,CLNSIG,CLNDISDB" \
+		-custom "$MIRBASE_REFERENCE","miRBase","bed","overlap","0" \
+		-custom "$PGKB_DRUG_REFERENCE","pharmgkb_drug","vcf","exact",0,"PGKB_Annotation_ID,PGKB_Gene,PGKB_Chemical,PGKB_PMID,PGKB_Phenotype_Category,PGKB_Sentence" \
+		-custom "$PROJECT_COVERAGE","project_cov","bed","overlap","0" \
+		--plugin CADD,"$CADD_SNV_REFERENCE","$CADD_INDEL_REFERENCE" \
+	&& mv $target.build $target

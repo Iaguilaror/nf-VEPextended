@@ -1,0 +1,31 @@
+### mk-extract-chromosomes ###
+# mkfile script with dependency rules for:
+#	1. Extract the chromosome name from names stored in the index file.
+#	2. Use the chromosome name to define a filename, which contains at least one variant (-gt 0)
+# 3. Sort each subsample vcf file.
+## For more information about 'mk' dependency control, see https://9fans.github.io/plan9port/man/man1/mk.html
+
+## Define shell command line which will be used to run scripts.
+MKSHELL=/bin/bash
+
+## The script performs the following functions
+# 1. Using tabix --list-chroms, creates a temporary list of chromosomes detected in the input vcf
+# 2. Loop through the $stem.chrlist.tmp (repalced by direct cat of the list chroms results)
+# a. For each iterarion of the loop, define the filename of the chromosome, using the $stem1 variable with a chromosome suffix and the vcf extension
+# b. Use bcftools view to extract the corresponding header + chromosome variants, and send it to the filename of the chromosome (via > *.vcf)
+# NOTE: output format is uncompressed VCF
+## For more information about 'bcftools', see https://samtools.github.io/bcftools/bcftools.html
+%.CHECKPOINT.tmp:VQ: %.vcf.gz %.vcf.gz.tbi
+	echo "extracting chromosome vcfs from $prereq"
+	for chromosome in $(tabix --list-chroms $stem.vcf.gz | grep -v ":" | grep -v "*")
+	do
+	  subsampled_filename="$stem.subsampled$chromosome.vcf"
+	  chromosome_variants=$(bcftools view -H $stem.vcf.gz $chromosome | head -n1 | wc -l)
+	  if [ $chromosome_variants -gt 0 ]
+	  then
+	    echo "[>>.] Extracting $chromosome into $subsampled_filename; found at least $chromosome_variants variant(s)"
+	    bcftools view $stem.vcf.gz $chromosome | bcftools sort > $subsampled_filename
+	  else
+	    echo "[xxx] skipping $chromosome ; $chromosome_variants variants found for $chromosome"
+	  fi
+	done
