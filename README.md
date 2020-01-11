@@ -181,10 +181,11 @@ Under the hood VEPextended implements some widely known tools. Please include th
 
 
 ---
-
+### Developed at INMEGEN
+#### Bioinformatics Department
 ### Contact
 If you have questions, requests, or bugs to report, please email
-<iaguilaror@gmail.com>
+<iaguilar@inmegen.gob.mx>
 
 #### Dev Team
 Israel Aguilar-Ordonez <iaguilaror@gmail.com>   
