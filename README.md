@@ -189,3 +189,4 @@ If you have questions, requests, or bugs to report, please email
 
 #### Dev Team
 Israel Aguilar-Ordonez <iaguilaror@gmail.com>   
+Judith Ballesteros-Villascán <judith.vballesteros@gmail>
