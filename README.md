@@ -25,17 +25,18 @@ VEPextended
 ## Requirements
 #### Compatible OS*:
 * [Ubuntu 18.04.03 LTS](http://releases.ubuntu.com/18.04/)
+* [Ubuntu 20.04.2.0 LTS](https://releases.ubuntu.com/20.04/)
 
 \* VEPextended may run in other UNIX based OS and versions, but testing is required.
 
 #### Software:
 | Requirement | Version  | Required Commands * |
 |:---------:|:--------:|:-------------------:|
-| [bcftools](https://samtools.github.io/bcftools/) | 1.9-220-gc65ba41 | bcftools |
-| [htslib](http://www.htslib.org/download/) | 1.9 | tabix, bgzip |
-| [ensembl-vep](http://www.ensembl.org/info/docs/tools/vep/script/vep_download.html) | 96 | vep |
-| [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) | 19.04.1.5072 | nextflow |
-| [Plan9 port](https://github.com/9fans/plan9port) | Latest (as of 10/01/2019 ) | mk \** |
+| [bcftools](https://samtools.github.io/bcftools/) | 1.12 | bcftools |
+| [htslib](http://www.htslib.org/download/) | 1.12 | tabix, bgzip |
+| [ensembl-vep](http://www.ensembl.org/info/docs/tools/vep/script/vep_download.html) | 103 | vep |
+| [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html) | 20.10.0.5430 | nextflow |
+| [Plan9 port](https://github.com/9fans/plan9port) | Latest (as of 31/03/2021 ) | mk \** |
 
 \* These commands must be accessible from your `$PATH` (*i.e.* you should be able to invoke them from your command line).  
 
